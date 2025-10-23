@@ -1,0 +1,22 @@
+# Asset universe mapping for HMM crypto strategy
+assets:
+  BTCUSD:
+    qc_ticker: BTCUSD
+    cryptoquant_symbol: btc_usd
+    coinstats_symbol: btc
+    binance_symbol: BTCUSDT
+  ETHUSD:
+    qc_ticker: ETHUSD
+    cryptoquant_symbol: eth_usd
+    coinstats_symbol: eth
+    binance_symbol: ETHUSDT
+  SOLUSD:
+    qc_ticker: SOLUSD
+    cryptoquant_symbol: sol_usd
+    coinstats_symbol: sol
+    binance_symbol: SOLUSDT
+  BNBUSD:
+    qc_ticker: BNBUSD
+    cryptoquant_symbol: bnb_usd
+    coinstats_symbol: bnb
+    binance_symbol: BNBUSDT

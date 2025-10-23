@@ -1,0 +1,9 @@
+# Global configuration parameters for the HMM crypto strategy
+threshold: 0.7
+lookback_hours: 336            # two weeks of hourly data for retraining
+retrain_hours: 24              # retrain model once per day
+max_states: 3
+seed: 42
+risk_management:
+  max_allocation_per_asset: 0.25
+  rebalance_interval_hours: 1
