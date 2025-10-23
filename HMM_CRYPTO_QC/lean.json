@@ -1,0 +1,14 @@
+{
+  "environment": "backtesting",
+  "live-mode-brokerage": "QuantConnectBrokerage",
+  "data-folder": "./qc_data",
+  "algorithm-language": "Python",
+  "algorithm-type-name": "HMMCryptoAlgorithm",
+  "algorithm-location": "qcsrc/HMMCryptoAlgorithm.py",
+  "result-handler": "QuantConnect.Lean.Engine.Results.BacktestingResultHandler",
+  "messaging-handler": "QuantConnect.Lean.Engine.Messaging.Messaging",
+  "job-queue-handler": "QuantConnect.Lean.Engine.JobQueue.JobQueue",
+  "setup-handler": "QuantConnect.Lean.Engine.Setup.BacktestingSetupHandler",
+  "history-provider": "QuantConnect.Lean.Engine.HistoricalData.HistoryProvider",
+  "data-provider": "QuantConnect.Lean.Engine.DataFeeds.ApiDataProvider"
+}
