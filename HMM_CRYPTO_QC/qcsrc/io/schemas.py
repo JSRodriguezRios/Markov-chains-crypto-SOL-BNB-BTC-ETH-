@@ -3,13 +3,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, TYPE_CHECKING
 
 try:  # pragma: no cover - exercised only when pandas is available
     import pandas as pd
     from pandas.api.types import is_datetime64_any_dtype
-except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
-    raise ModuleNotFoundError("pandas is required for qcsrc.io.schemas") from exc
+except ModuleNotFoundError:  # pragma: no cover - optional dependency in minimal envs
+    pd = None  # type: ignore[assignment]
+    is_datetime64_any_dtype = None
+
+if TYPE_CHECKING:  # pragma: no cover - import only for static analysis
+    import pandas as pd
+
+
+def _require_pandas() -> None:
+    if pd is None:  # pragma: no cover - executed only when dependency missing
+        raise ModuleNotFoundError("pandas is required for qcsrc.io.schemas")
 
 
 @dataclass(frozen=True)
@@ -27,22 +36,25 @@ class DataFrameValidationError(ValueError):
     """Raised when a dataframe does not match the expected schema."""
 
 
-def _validate_columns(df: pd.DataFrame, expected: Iterable[SchemaField]) -> None:
+def _validate_columns(df: "pd.DataFrame", expected: Iterable[SchemaField]) -> None:
+    _require_pandas()
     missing = [field.name for field in expected if field.name not in df.columns]
     if missing:
         raise DataFrameValidationError(f"Missing columns: {missing}")
 
 
-def _validate_datetime(series: pd.Series, field: SchemaField) -> None:
+def _validate_datetime(series: "pd.Series", field: SchemaField) -> None:
+    _require_pandas()
     if series.dropna().empty:
         return
-    if not is_datetime64_any_dtype(series):
+    if is_datetime64_any_dtype is None or not is_datetime64_any_dtype(series):
         raise DataFrameValidationError(
             f"Column '{field.name}' is not datetime typed."
         )
 
 
-def _coerce_numeric(series: pd.Series, field: SchemaField) -> None:
+def _coerce_numeric(series: "pd.Series", field: SchemaField) -> None:
+    _require_pandas()
     if series.dropna().empty:
         return
     last_error: Exception | None = None
@@ -57,7 +69,8 @@ def _coerce_numeric(series: pd.Series, field: SchemaField) -> None:
     ) from last_error
 
 
-def _validate_types(df: pd.DataFrame, expected: Iterable[SchemaField]) -> None:
+def _validate_types(df: "pd.DataFrame", expected: Iterable[SchemaField]) -> None:
+    _require_pandas()
     for field in expected:
         series = df[field.name]
         if datetime in field.acceptable_types():
@@ -66,7 +79,8 @@ def _validate_types(df: pd.DataFrame, expected: Iterable[SchemaField]) -> None:
             _coerce_numeric(series, field)
 
 
-def validate_cryptoquant(df: pd.DataFrame) -> None:
+def validate_cryptoquant(df: "pd.DataFrame") -> None:
+    _require_pandas()
     expected = [
         SchemaField("timestamp", datetime),
         SchemaField("open", float),
@@ -80,7 +94,8 @@ def validate_cryptoquant(df: pd.DataFrame) -> None:
     _validate_types(df, expected)
 
 
-def validate_binance_orderbook(df: pd.DataFrame) -> None:
+def validate_binance_orderbook(df: "pd.DataFrame") -> None:
+    _require_pandas()
     expected = [
         SchemaField("timestamp", datetime),
         SchemaField("best_bid", float),
@@ -93,7 +108,8 @@ def validate_binance_orderbook(df: pd.DataFrame) -> None:
     _validate_types(df, expected)
 
 
-def validate_coinstats(df: pd.DataFrame) -> None:
+def validate_coinstats(df: "pd.DataFrame") -> None:
+    _require_pandas()
     expected = [
         SchemaField("timestamp", datetime),
         SchemaField("fear_greed_score", float),
@@ -103,7 +119,8 @@ def validate_coinstats(df: pd.DataFrame) -> None:
     _validate_types(df, expected)
 
 
-def validate_interim(df: pd.DataFrame) -> None:
+def validate_interim(df: "pd.DataFrame") -> None:
+    _require_pandas()
     expected = [
         SchemaField("timestamp", datetime),
         SchemaField("open", float),
@@ -124,7 +141,8 @@ def validate_interim(df: pd.DataFrame) -> None:
     _validate_types(df, expected)
 
 
-def validate_features(df: pd.DataFrame) -> None:
+def validate_features(df: "pd.DataFrame") -> None:
+    _require_pandas()
     """Ensure feature matrices include timestamp and numeric predictors."""
 
     if "timestamp" not in df.columns:

@@ -61,8 +61,7 @@ Use `config/settings.yaml` and `config/features.yaml` to iterate on thresholds, 
 2. Rerun the offline training pipeline (`python -m qcsrc.pipeline.train_hmm`).
 3. Refresh probabilities with `python -m qcsrc.pipeline.infer_proba` and re-upload exports.
 4. Trigger a new backtest and compare the generated metrics JSON plus QC dashboard statistics.
-
-Document experiment outcomes (parameter combinations, metric deltas) directly in the notebooks or by appending to the `Backtesting & Evaluation` section.
+5. Document experiment outcomes (parameter combinations, metric deltas) directly in the notebooks or by appending to the `Backtesting & Evaluation` section.
 
 ## Deployment Runbook
 

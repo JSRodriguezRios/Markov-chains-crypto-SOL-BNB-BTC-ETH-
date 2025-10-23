@@ -25,6 +25,12 @@ def load_yaml_config(relative_path: str) -> Dict[str, Any]:
         return yaml.safe_load(handle)
 
 
+def load_settings_config() -> Dict[str, Any]:
+    """Return the global strategy settings configuration."""
+
+    return load_yaml_config("config/settings.yaml")
+
+
 def load_assets_config() -> Dict[str, Any]:
     return load_yaml_config("config/assets.yaml").get("assets", {})
 
