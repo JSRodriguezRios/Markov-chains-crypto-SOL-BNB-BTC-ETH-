@@ -1,0 +1,19 @@
+numpy
+pandas
+requests
+hmmlearn
+scikit-learn
+pyyaml
+python-dotenv
+pyarrow
+statsmodels
+scipy
+matplotlib
+seaborn
+pydantic
+pytest
+backports.zoneinfo; python_version<'3.9'
+tzdata; platform_system=='Windows'
+logging
+AlgorithmImports
+pickle

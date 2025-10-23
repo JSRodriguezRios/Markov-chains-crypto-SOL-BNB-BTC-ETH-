@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+
+# Environments
+.venv/
+.env
+.env.*
+.DS_Store
+
+# Secrets
+secrets/
+config/credentials.json
+
+# Data artifacts
+*.parquet
+*.pkl
+*.pickle
+*.joblib
+*.csv
+*.log
+
+# Lean / QuantConnect
+*.ipynb_checkpoints/
+lean.json.backup
+*.lean
+./lean-cache/
+qc_data/custom/**/*.zip
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
