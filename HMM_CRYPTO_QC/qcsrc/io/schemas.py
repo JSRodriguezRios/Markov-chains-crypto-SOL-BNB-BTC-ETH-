@@ -3,16 +3,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Tuple
 
-import pandas as pd
-from pandas.api.types import is_datetime64_any_dtype
+try:  # pragma: no cover - exercised only when pandas is available
+    import pandas as pd
+    from pandas.api.types import is_datetime64_any_dtype
+except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
+    raise ModuleNotFoundError("pandas is required for qcsrc.io.schemas") from exc
 
 
 @dataclass(frozen=True)
 class SchemaField:
     name: str
-    dtype: type
+    dtype: Tuple[type, ...] | type
+
+    def acceptable_types(self) -> Tuple[type, ...]:
+        if isinstance(self.dtype, tuple):
+            return self.dtype
+        return (self.dtype,)
 
 
 class DataFrameValidationError(ValueError):
@@ -25,22 +33,37 @@ def _validate_columns(df: pd.DataFrame, expected: Iterable[SchemaField]) -> None
         raise DataFrameValidationError(f"Missing columns: {missing}")
 
 
+def _validate_datetime(series: pd.Series, field: SchemaField) -> None:
+    if series.dropna().empty:
+        return
+    if not is_datetime64_any_dtype(series):
+        raise DataFrameValidationError(
+            f"Column '{field.name}' is not datetime typed."
+        )
+
+
+def _coerce_numeric(series: pd.Series, field: SchemaField) -> None:
+    if series.dropna().empty:
+        return
+    last_error: Exception | None = None
+    for dtype in field.acceptable_types():
+        try:
+            series.astype(dtype)
+            return
+        except (ValueError, TypeError) as exc:
+            last_error = exc
+    raise DataFrameValidationError(
+        f"Column '{field.name}' cannot be coerced to {field.acceptable_types()}"
+    ) from last_error
+
+
 def _validate_types(df: pd.DataFrame, expected: Iterable[SchemaField]) -> None:
     for field in expected:
         series = df[field.name]
-        if not series.dropna().empty:
-            if field.dtype is datetime:
-                if not is_datetime64_any_dtype(series):
-                    raise DataFrameValidationError(
-                        f"Column '{field.name}' is not datetime typed."
-                    )
-            else:
-                try:
-                    series.astype(field.dtype)
-                except (ValueError, TypeError) as exc:  # pragma: no cover - defensive
-                    raise DataFrameValidationError(
-                        f"Column '{field.name}' cannot be coerced to {field.dtype}."
-                    ) from exc
+        if datetime in field.acceptable_types():
+            _validate_datetime(series, field)
+        else:
+            _coerce_numeric(series, field)
 
 
 def validate_cryptoquant(df: pd.DataFrame) -> None:
@@ -113,11 +136,4 @@ def validate_features(df: pd.DataFrame) -> None:
 
     _validate_types(df[["timestamp"]], [SchemaField("timestamp", datetime)])
     for column in numeric_columns:
-        series = df[column]
-        if not series.dropna().empty:
-            try:
-                series.astype(float)
-            except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
-                raise DataFrameValidationError(
-                    f"Feature column '{column}' cannot be converted to float."
-                ) from exc
+        _coerce_numeric(df[column], SchemaField(column, float))
