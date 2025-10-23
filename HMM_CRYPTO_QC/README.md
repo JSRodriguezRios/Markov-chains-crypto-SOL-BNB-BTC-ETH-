@@ -36,6 +36,43 @@ HMM_CRYPTO_QC/
 └─ tests/             # Unit tests covering pipeline and algorithm helpers
 ```
 
+## Backtesting & Evaluation
+
+1. **Prepare data** – run the ingestion + processing pipeline:
+   ```bash
+   python -m qcsrc.pipeline.run_all --start 2022-01-01 --end 2023-01-01
+   ```
+   This populates `data/interim/`, `data/processed/`, and the trained models in `data/models/hmm/`.
+2. **Upload resources to QuantConnect** – copy the contents of `qc_data/` and `data/models/` to the QC Object Store so the algorithm can warm start in cloud backtests.
+3. **Launch a 1-year backtest** – inside QuantConnect set the start/end dates (e.g., 2022-01-01 to 2023-01-01) and select hourly resolution. Ensure the brokerage model is spot (`BinanceUS` or default crypto brokerage).
+4. **Collect QC statistics** – after the run finishes, export the backtest results JSON. Key metrics such as Sharpe, Sortino, drawdown, win and loss rates are automatically captured by QuantConnect and mirrored in the algorithm’s metrics reports.
+5. **Retrieve metrics JSON** – each asset writes a diagnostics file to `data/models/diagnostics/<SYMBOL>_metrics.json` containing:
+   - Latest MAE, RMSE, and MAPE of the return forecasts.
+   - Win/loss distribution derived from `TradeBuilder.ClosedTrades`.
+   - Sharpe/Sortino/Drawdown snapshots from `self.Statistics`.
+   These files are created during `OnEndOfAlgorithm` and can be downloaded from the cloud filesystem post-backtest.
+6. **Analyse notebooks** – open the notebooks under `notebooks/` locally to visualise state sequences, transition matrices, and asset-specific EDA. They expect the processed parquet files generated earlier.
+
+## Parameter Tuning Workflow
+
+Use `config/settings.yaml` and `config/features.yaml` to iterate on thresholds, HMM state counts, and feature windows:
+
+1. Adjust `threshold` (e.g., 0.6–0.8) and volatility/return windows.
+2. Rerun the offline training pipeline (`python -m qcsrc.pipeline.train_hmm`).
+3. Refresh probabilities with `python -m qcsrc.pipeline.infer_proba` and re-upload exports.
+4. Trigger a new backtest and compare the generated metrics JSON plus QC dashboard statistics.
+
+Document experiment outcomes (parameter combinations, metric deltas) directly in the notebooks or by appending to the `Backtesting & Evaluation` section.
+
+## Deployment Runbook
+
+1. **Update datasets** – execute `python -m qcsrc.pipeline.run_all --live` to pull the latest data snapshots.
+2. **Retrain models** – run `python -m qcsrc.pipeline.train_hmm --retrain --symbols BTC,ETH,SOL,BNB` before deploying changes.
+3. **Refresh custom data exports** – rerun `python -m qcsrc.pipeline.infer_proba` to regenerate the CSV feeds used by the QuantConnect algorithm.
+4. **Upload to QuantConnect** – sync `qcsrc/`, `qc_data/`, and `data/models/` through the QC CLI or GUI, ensuring secrets remain excluded.
+5. **Smoke backtest** – launch a short (e.g., 7-day) backtest to verify that metrics reports are produced and thresholds behave as expected.
+6. **Promote to live** – once satisfied, schedule the same files in a live QuantConnect project with spot brokerage. Monitor the generated metrics JSON after trading sessions to confirm forecasts remain stable.
+
 ## Next Steps
 
 - Phase 2: Implement the API fetching layer (`qcsrc/pipeline/fetch_*.py`).

@@ -79,10 +79,27 @@ except ImportError:  # pragma: no cover - fallback minimal stubs
         def AddConsolidator(self, symbol: Symbol, consolidator: TradeBarConsolidator) -> None:  # noqa: N802
             return None
 
+    class Trade:
+        def __init__(
+            self,
+            symbol: str,
+            profit_loss: float = 0.0,
+            total_fees: float = 0.0,
+        ) -> None:
+            self.Symbol = Symbol(symbol)
+            self.ProfitLoss = profit_loss
+            self.TotalFees = total_fees
+
+    class TradeBuilder:
+        def __init__(self) -> None:
+            self.ClosedTrades: list[Trade] = []
+
     class QCAlgorithm:
         def __init__(self) -> None:
             self.Portfolio = Portfolio()
             self.SubscriptionManager = SubscriptionManager()
+            self.TradeBuilder = TradeBuilder()
+            self.Statistics: dict[str, float] = {}
 
         def SetStartDate(self, year: int, month: int, day: int) -> None:
             return None

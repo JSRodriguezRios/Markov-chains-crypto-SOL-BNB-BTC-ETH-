@@ -17,6 +17,12 @@ from ._algorithm_compat import (  # type: ignore
     TradeBar,
     TradeBarConsolidator,
 )
+from .analysis.performance import (
+    extract_statistics,
+    group_trades_by_symbol,
+    persist_metrics_report,
+    summarize_closed_trades,
+)
 from .custom_data.hmm_state_proba import HMMThresholds
 from .custom_data.liquidity_bit_ask import LiquidityBitAsk
 from .custom_data.market_sentiment import MarketSentiment
@@ -395,11 +401,26 @@ class HMMCryptoAlgorithm(QCAlgorithm):
     # endregion
 
     def OnEndOfAlgorithm(self) -> None:  # noqa: N802 - QC naming convention
+        log_phase_checkpoint(LOGGER, "Finalising algorithm metrics")
+        closed_trades = getattr(getattr(self, "TradeBuilder", None), "ClosedTrades", [])
+        trades_by_symbol = group_trades_by_symbol(closed_trades)
+        statistics_summary = extract_statistics(getattr(self, "Statistics", {}))
+
         for ticker, context in self._contexts.items():
             metrics = compute_error_metrics(context.predicted_returns, context.actual_returns)
+            trade_metrics = summarize_closed_trades(trades_by_symbol.get(context.symbol.Value, []))
+            report = {
+                "symbol": context.symbol.Value,
+                "error_metrics": metrics,
+                "trade_metrics": trade_metrics,
+                "statistics": statistics_summary,
+                "final_probabilities": context.probabilities,
+            }
+            persist_metrics_report(ticker, report)
+
             message = (
                 f"{ticker} | MAE: {metrics['mae']:.6f}, RMSE: {metrics['rmse']:.6f}, "
-                f"MAPE: {metrics['mape']:.6f}"
+                f"MAPE: {metrics['mape']:.6f}, WinRate: {trade_metrics['win_rate']:.2%}"
             )
             self.Debug(message)
 
