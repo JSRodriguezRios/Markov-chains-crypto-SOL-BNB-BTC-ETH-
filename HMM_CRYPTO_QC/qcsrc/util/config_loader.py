@@ -31,3 +31,9 @@ def load_assets_config() -> Dict[str, Any]:
 
 def load_schedule_config() -> Dict[str, Any]:
     return load_yaml_config("config/schedule.yaml")
+
+
+def load_features_config() -> Dict[str, Any]:
+    """Return the feature engineering configuration dictionary."""
+
+    return load_yaml_config("config/features.yaml")

@@ -99,3 +99,25 @@ def validate_interim(df: pd.DataFrame) -> None:
     ]
     _validate_columns(df, expected)
     _validate_types(df, expected)
+
+
+def validate_features(df: pd.DataFrame) -> None:
+    """Ensure feature matrices include timestamp and numeric predictors."""
+
+    if "timestamp" not in df.columns:
+        raise DataFrameValidationError("Feature matrix must include a timestamp column.")
+
+    numeric_columns = [column for column in df.columns if column != "timestamp"]
+    if not numeric_columns:
+        raise DataFrameValidationError("Feature matrix does not contain any features.")
+
+    _validate_types(df[["timestamp"]], [SchemaField("timestamp", datetime)])
+    for column in numeric_columns:
+        series = df[column]
+        if not series.dropna().empty:
+            try:
+                series.astype(float)
+            except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
+                raise DataFrameValidationError(
+                    f"Feature column '{column}' cannot be converted to float."
+                ) from exc
