@@ -1,0 +1,9 @@
+# Data refresh and model retraining cadence
+fetch:
+  external_data: hourly
+  qc_custom_export: hourly
+retraining:
+  hmm: daily
+  diagnostics: weekly
+backtest:
+  frequency: monthly

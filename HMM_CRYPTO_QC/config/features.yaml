@@ -1,0 +1,16 @@
+# Feature engineering configuration
+returns:
+  windows: [1, 4, 24]
+  method: log
+volatility:
+  windows: [6, 24]
+  method: rolling_std
+liquidity:
+  depth_percent_levels: [0.01, 0.05]
+  include_spread: true
+  include_imbalance: true
+sentiment:
+  lags: [1, 3, 6]
+  zscore_window: 24
+normalization:
+  scaler: standard
