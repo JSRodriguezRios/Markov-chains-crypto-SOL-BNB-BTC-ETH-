@@ -68,3 +68,32 @@ def metrics_output_path(symbol: str) -> Path:
     directory = project_root() / "data" / "models" / "diagnostics"
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"{symbol}_metrics.json"
+
+
+def _custom_data_directory(category: str) -> Path:
+    """Return the QuantConnect custom data directory for ``category``."""
+
+    directory = project_root() / "qc_data" / "custom" / category
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def hmm_probability_export_path(symbol: str) -> Path:
+    """Return the export path for HMM probability time series."""
+
+    filename = f"{symbol.lower()}.csv"
+    return _custom_data_directory("HMMStateProba") / filename
+
+
+def liquidity_export_path(symbol: str) -> Path:
+    """Return the export path for liquidity custom data."""
+
+    filename = f"{symbol.lower()}.csv"
+    return _custom_data_directory("LiquidityBitAsk") / filename
+
+
+def sentiment_export_path(symbol: str) -> Path:
+    """Return the export path for sentiment custom data."""
+
+    filename = f"{symbol.lower()}.csv"
+    return _custom_data_directory("MarketSentiment") / filename

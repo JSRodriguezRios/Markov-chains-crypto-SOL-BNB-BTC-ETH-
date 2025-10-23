@@ -1,34 +1,43 @@
-"""Utilities for timezone normalization."""
+"""Timezone helpers with graceful pandas handling."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Iterable
+from datetime import datetime, timedelta, timezone
+from typing import Iterable, Sequence
 
-import pandas as pd
+try:  # pragma: no cover - optional dependency handling
+    import pandas as pd
+except ModuleNotFoundError:  # pragma: no cover
+    pd = None  # type: ignore
 
 from .logging_utils import create_logger
 
 LOGGER = create_logger(__name__)
-
-
 UTC = timezone.utc
 
 
-def ensure_utc(series: pd.Series) -> pd.Series:
+def _require_pandas() -> None:
+    if pd is None:  # pragma: no cover - defensive guard
+        raise ImportError("pandas is required for timezone utilities.")
+
+
+def ensure_utc(series: Sequence) -> "pd.Series":  # type: ignore[override]
     """Return a timezone-aware copy of ``series`` normalized to UTC."""
 
-    if series.empty:
-        return series
+    _require_pandas()
+    pandas_series = pd.Series(series)
+    if pandas_series.empty:
+        return pandas_series
 
-    converted = pd.to_datetime(series, utc=True, errors="coerce")
+    converted = pd.to_datetime(pandas_series, utc=True, errors="coerce")
     if converted.isna().any():
         LOGGER.warning("Encountered NaT values while coercing timestamps to UTC.")
     return converted
 
 
-def hourly_range(start: datetime, end: datetime) -> pd.DatetimeIndex:
+def hourly_range(start: datetime, end: datetime):  # type: ignore[override]
     """Generate an hourly UTC index inclusive of ``start`` and exclusive of ``end``."""
 
+    _require_pandas()
     start_utc = start.astimezone(UTC)
     end_utc = end.astimezone(UTC)
     if end_utc <= start_utc:
@@ -49,7 +58,7 @@ def ceil_to_hour(moment: datetime) -> datetime:
     floored = floor_to_hour(moment)
     if moment.astimezone(UTC) == floored:
         return floored
-    return floored + pd.Timedelta(hours=1)
+    return floored + timedelta(hours=1)
 
 
 def assert_utc_index(index: Iterable[datetime]) -> None:
