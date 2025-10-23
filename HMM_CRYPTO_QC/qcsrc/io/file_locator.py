@@ -44,3 +44,27 @@ def scaler_output_path(symbol: str) -> Path:
     directory = project_root() / "data" / "models" / "hmm"
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"{symbol}_scaler.pkl"
+
+
+def hmm_model_output_path(symbol: str) -> Path:
+    """Return the canonical persistence path for trained HMM models."""
+
+    directory = project_root() / "data" / "models" / "hmm"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / f"{symbol}_hmm.pkl"
+
+
+def diagnostics_output_path(symbol: str) -> Path:
+    """Return the diagnostics report location for ``symbol``."""
+
+    directory = project_root() / "data" / "models" / "diagnostics"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / f"{symbol}_report.json"
+
+
+def metrics_output_path(symbol: str) -> Path:
+    """Return the metrics report location for ``symbol``."""
+
+    directory = project_root() / "data" / "models" / "diagnostics"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / f"{symbol}_metrics.json"
