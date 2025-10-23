@@ -36,22 +36,20 @@ HMM_CRYPTO_QC/
 └─ tests/             # Unit tests covering pipeline and algorithm helpers
 ```
 
-## Backtesting & Evaluation
+## Bootstrapping & Evaluation
 
-1. **Prepare data** – run the ingestion + processing pipeline:
+Follow these steps to move from raw data to a QuantConnect backtest that mirrors the nine-phase roadmap:
+
+1. **Wrapper chain** – execute the ingestion and processing pipeline to refresh every staged dataset.
    ```bash
    python -m qcsrc.pipeline.run_all --start 2022-01-01 --end 2023-01-01
    ```
-   This populates `data/interim/`, `data/processed/`, and the trained models in `data/models/hmm/`.
-2. **Upload resources to QuantConnect** – copy the contents of `qc_data/` and `data/models/` to the QC Object Store so the algorithm can warm start in cloud backtests.
-3. **Launch a 1-year backtest** – inside QuantConnect set the start/end dates (e.g., 2022-01-01 to 2023-01-01) and select hourly resolution. Ensure the brokerage model is spot (`BinanceUS` or default crypto brokerage).
-4. **Collect QC statistics** – after the run finishes, export the backtest results JSON. Key metrics such as Sharpe, Sortino, drawdown, win and loss rates are automatically captured by QuantConnect and mirrored in the algorithm’s metrics reports.
-5. **Retrieve metrics JSON** – each asset writes a diagnostics file to `data/models/diagnostics/<SYMBOL>_metrics.json` containing:
-   - Latest MAE, RMSE, and MAPE of the return forecasts.
-   - Win/loss distribution derived from `TradeBuilder.ClosedTrades`.
-   - Sharpe/Sortino/Drawdown snapshots from `self.Statistics`.
-   These files are created during `OnEndOfAlgorithm` and can be downloaded from the cloud filesystem post-backtest.
-6. **Analyse notebooks** – open the notebooks under `notebooks/` locally to visualise state sequences, transition matrices, and asset-specific EDA. They expect the processed parquet files generated earlier.
+   The command hydrates `data/interim/`, builds feature matrices in `data/processed/`, and stores retrained HMMs beneath `data/models/hmm/`.
+2. **QC resources** – upload the generated artifacts (`qc_data/` exports and `data/models/`) to the QuantConnect Object Store or project data folder so the algorithm can warm start online.
+3. **Backtest window** – configure an hourly backtest of at least one year inside QuantConnect (for example, 2022-01-01 through 2023-01-01) using a spot brokerage model such as `BinanceUS`.
+4. **Metrics capture** – once the run completes, download the backtest JSON to archive the standard QC statistics (Sharpe, Sortino, drawdown, win/loss rate, trade counts). The algorithm also logs Sortino and drawdown snapshots through its diagnostics channel.
+5. **Local diagnostics** – every asset persists a JSON report to `data/models/diagnostics/<SYMBOL>_metrics.json` summarising MAE, RMSE, MAPE, and trade outcomes derived from `TradeBuilder.ClosedTrades`. Fetch these files from the QC filesystem to compare runs.
+6. **Notebook review** – inspect the notebooks stored under `notebooks/` to visualise regime sequences, transition matrices, and asset-specific feature behaviour. They expect the parquet outputs produced in step 1.
 
 ## Parameter Tuning Workflow
 
@@ -61,7 +59,7 @@ Use `config/settings.yaml` and `config/features.yaml` to iterate on thresholds, 
 2. Rerun the offline training pipeline (`python -m qcsrc.pipeline.train_hmm`).
 3. Refresh probabilities with `python -m qcsrc.pipeline.infer_proba` and re-upload exports.
 4. Trigger a new backtest and compare the generated metrics JSON plus QC dashboard statistics.
-5. Document experiment outcomes (parameter combinations, metric deltas) directly in the notebooks or by appending to the `Backtesting & Evaluation` section.
+5. Document experiment outcomes (parameter combinations, metric deltas) directly in the notebooks or by appending to the `Bootstrapping & Evaluation` section.
 
 ## Deployment Runbook
 

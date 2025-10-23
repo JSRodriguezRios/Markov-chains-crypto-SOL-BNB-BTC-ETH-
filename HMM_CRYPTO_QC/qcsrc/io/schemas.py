@@ -23,13 +23,19 @@ def _require_pandas() -> None:
 
 @dataclass(frozen=True)
 class SchemaField:
+    """Describe an expected dataframe column."""
+
     name: str
     dtype: Tuple[type, ...] | type
+    allow_null: bool = False
 
     def acceptable_types(self) -> Tuple[type, ...]:
         if isinstance(self.dtype, tuple):
             return self.dtype
         return (self.dtype,)
+
+    def is_datetime(self) -> bool:
+        return any(member is datetime for member in self.acceptable_types())
 
 
 class DataFrameValidationError(ValueError):
@@ -73,7 +79,9 @@ def _validate_types(df: "pd.DataFrame", expected: Iterable[SchemaField]) -> None
     _require_pandas()
     for field in expected:
         series = df[field.name]
-        if datetime in field.acceptable_types():
+        if field.allow_null and series.dropna().empty:
+            continue
+        if field.is_datetime():
             _validate_datetime(series, field)
         else:
             _coerce_numeric(series, field)
@@ -145,13 +153,11 @@ def validate_features(df: "pd.DataFrame") -> None:
     _require_pandas()
     """Ensure feature matrices include timestamp and numeric predictors."""
 
-    if "timestamp" not in df.columns:
-        raise DataFrameValidationError("Feature matrix must include a timestamp column.")
-
     numeric_columns = [column for column in df.columns if column != "timestamp"]
     if not numeric_columns:
         raise DataFrameValidationError("Feature matrix does not contain any features.")
 
+    _validate_columns(df, [SchemaField("timestamp", datetime)])
     _validate_types(df[["timestamp"]], [SchemaField("timestamp", datetime)])
     for column in numeric_columns:
         _coerce_numeric(df[column], SchemaField(column, float))
