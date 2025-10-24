@@ -1,6 +1,6 @@
 """Schema validation helpers for pipeline outputs."""
 from __future__ import annotations
-
+import pandas as pd
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable, Tuple, TYPE_CHECKING
